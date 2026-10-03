@@ -1,106 +1,131 @@
 ---
 name: napkin
-description: |
-  Maintain a per-repo napkin as a continuously curated runbook (not a session
-  log). Activates EVERY session. Read and curate it before work, keep only
-  recurring high-value guidance, organize by priority-sorted categories, and
-  cap each category at top 10 items. The napkin lives at `.claude/napkin.md`.
+description: "Maintain either a configured global user-level Napkin or the default per-repository Napkin. Read and curate recurring high-value guidance before investigations, keep explicit actions, and avoid chronological session logs."
 author: Codex
-version: 6.0.0
-date: 2026-02-21
+version: 7.1.0
+date: 2026-10-02
 ---
 
 # Napkin
 
-You maintain a per-repo markdown runbook, not a chronological log. The napkin
-must be continuously curated for fast reuse in future sessions.
+Napkin supports two mutually exclusive modes:
 
-**This skill is always active. Every session. No trigger required.**
+1. **Global user-level Napkin — used exclusively when configured**
+2. **Per-repository Napkin — fallback when global mode is not configured**
 
-## Session Start: Read And Curate
+## Select the mode
 
-First thing, every session — read `.claude/napkin.md` before doing anything
-else. Internalize what's there and apply it silently. Don't announce that you
-read it. Just apply what you know.
+Look for `config.json` beside the installed `SKILL.md`.
 
-Every time you read it, curate it immediately:
+Typical locations:
 
-- Re-prioritize items by importance (highest first).
-- Merge duplicates and remove stale/low-signal notes.
-- Keep only recurring, high-frequency guidance.
-- Ensure each item contains an explicit "Do instead" action.
-- Enforce category caps (top 10 per category).
+- GitHub Copilot CLI: `~/.copilot/skills/napkin/config.json`
+- Claude Code: `~/.claude/skills/napkin/config.json`
+- Codex: `~/.codex/skills/napkin/config.json`
 
-If no napkin exists yet, create one at `.claude/napkin.md`:
+Use global mode only when the adjacent file contains:
+
+```json
+{
+  "mode": "global",
+  "napkinPath": "C:\\path\\to\\private\\napkin.md"
+}
+```
+
+When this configuration is present, read and maintain only `napkinPath`. Do not read, create, or update `<current-repository>\.claude\napkin.md`.
+
+Without that configuration, use per-repository behavior.
+
+## Per-repository fallback
+
+Only when global mode is not configured, read and maintain:
+
+```text
+<current-repository>\.claude\napkin.md
+```
+
+If it does not exist, create:
 
 ```markdown
 # Napkin Runbook
 
-## Curation Rules
-- Re-prioritize on every read.
-- Keep recurring, high-value notes only.
-- Max 10 items per category.
-- Each item includes date + "Do instead".
+## Execution and Validation
 
-## Execution & Validation (Highest Priority)
-1. **[YYYY-MM-DD] Short rule**
-   Do instead: concrete repeatable action.
-
-## Shell & Command Reliability
-1. **[YYYY-MM-DD] Short rule**
-   Do instead: concrete repeatable action.
+## Shell and Tool Reliability
 
 ## Domain Behavior Guardrails
-1. **[YYYY-MM-DD] Short rule**
-   Do instead: concrete repeatable action.
 
 ## User Directives
-1. **[YYYY-MM-DD] Directive**
-   Do instead: exactly follow this preference.
 ```
 
-Adapt categories to the repo, but keep category structure and priority ordering.
-Do not use raw journal-style entries.
-
-## Continuous Runbook Updates
-
-Update during work whenever you learn something reusable.
-
-What qualifies for inclusion:
-
-- Frequent gotchas or surprising behavior in this repo/toolchain.
-- User directives that affect repeated behavior.
-- Non-obvious tactics that repeatedly work.
-
-What does not qualify:
-
-- One-off timeline notes.
-- Verbose postmortems without reusable action.
-- Pure mistake logs without "Do instead" guidance.
-
-Entry format requirements:
-
-- Include date added (`[YYYY-MM-DD]`).
-- Include short rule title.
-- Include explicit `Do instead:` line.
-- Keep wording concise and action-oriented.
-
-## Category And Priority Policy
-
-- Organize notes by category.
-- Keep each category sorted by importance descending.
-- Re-evaluate category choice and priority whenever editing.
-- Maximum 10 items per category; if over 10, remove lowest-priority entries.
-- Prefer fewer high-signal items over broad coverage.
-
-## Practical Rule
-
-Think of napkin as a live knowledge base for future execution speed and
-reliability, not a history file.
-
-## Example Entry
+Per-repository entries use:
 
 ```markdown
-1. **[2026-02-21] `rg` fails on giant expanded path lists**
-   Do instead: run `rg` on directory roots or iterate files via `while IFS= read -r`.
+1. **[YYYY-MM-DD] Short reusable rule**
+   Do instead: <concrete repeatable action>
 ```
+
+The repository owner decides whether `.claude\napkin.md` is committed or ignored.
+
+## Global mode
+
+When explicitly configured, read and maintain only the private file at `napkinPath`.
+
+Before applying global guidance:
+
+1. Resolve the current Git repository and `git remote get-url origin`.
+2. For non-repository work, identify a stable service, workflow, or tool origin.
+3. Apply entries whose `Scope` is `global`, whose `Origin` matches, or whose workflow/tool scope clearly applies.
+4. Never apply a repository-specific entry to an unrelated repository merely because terminology overlaps.
+
+Global entries use:
+
+```markdown
+1. **[YYYY-MM-DD] Short reusable rule**
+   Scope: `repo` | `origin` | `workflow` | `tool` | `global`
+   Origin: <normalized Git origin, repository, service, workflow, or tool>
+   Applies when: <short applicability condition>
+   Do instead: <concrete repeatable action>
+```
+
+Prefer the narrowest correct scope.
+
+Store every qualifying lesson in the global file and use `Scope`, `Origin`, and `Applies when` to prevent repository-specific guidance from leaking into unrelated work.
+
+## What to record
+
+Add or update an entry only when the lesson is verified and likely to recur:
+
+- A query, table, cluster, command, or tool choice that is easy to get wrong.
+- A correlation key or identifier transformation.
+- A failed approach and the reliable alternative.
+- A tool limitation and successful fallback.
+- An interpretation rule that prevents false conclusions.
+- A repeated user preference or useful route to a specialized runbook.
+
+Do not record:
+
+- Current progress, changing counts, timestamps, or one-time timelines.
+- Tenant, connection, user, mailbox, object, or item identifiers.
+- Customer content, raw payloads, secrets, credentials, tokens, or sensitive URLs.
+- Speculation, unverified conclusions, or verbose postmortems.
+- Large procedures already maintained by a canonical skill.
+
+## Curation
+
+- Read and apply the selected Napkin before an investigation or when explicitly asked to use or update it.
+- Organize by investigation concern rather than chronology.
+- Merge duplicates and remove stale guidance.
+- Sort each category by importance.
+- Keep at most 10 entries per category in per-repository mode.
+- Keep at most 15 entries per category in global mode.
+- Require an actionable `Do instead:` line.
+
+## Precedence in global mode
+
+1. Repository instructions and canonical repository skills.
+2. Matching global `repo` or `origin` entries.
+3. Matching global workflow and tool entries.
+4. Global entries.
+
+Narrower scoped guidance always wins.
